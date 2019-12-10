@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+
+<!-- Started from the panner 3D example on tone.js examples site 10-5-2019 -->
+
+<html>
+<head>
+  <meta charset="utf-8">
+	<title>KP EightChannel w/ Tonejs and THREEJS</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<link rel="icon" type="image/png" sizes="174x174" href="./favicon.png">
+
+	<!-- <script src="https://unpkg.com/@webcomponents/webcomponentsjs@^2/webcomponents-bundle.js"></script> -->
+    <script src="js/Tone.js"></script>
+   <!-- <script src = "https://cdnjs.cloudflare.com/ajax/libs/tone/14.4.9/Tone.js"></script> -->
+	<script src="js/tonejs-ui.js"></script>
+	<!-- <script src="js/three.min.js"></script> -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<script src="js/WebGLDetector.js"></script>
+	<script src="js/THREE.Tone.js"></script>
+	<script src="js/kp-Spatial.js"></script>
+
+	<style type="text/css">
+		tone-play-toggle {
+			margin-bottom: 10px;
+		}
+
+		#three {
+			width: 100%;
+			height: 800px;
+		}
+	</style>
+</head>
+<body onunload="bufDispose()">
+	
+    <tone-play-toggle></tone-play-toggle>
+   <div id="three"></div>
+    <script type="text/javascript">
+    //*************************************** 
+    findPosition8Chan();// create locations for speakers
+    //*************************************** 
+
+		//let counter =0;
+	var posRep = [frontL, frontR, sFrontL,sFrontR,sBackL, sBackR, backL,BackR];
+	
+        //Panners
+    var frontL_P, frontR_P, sFrontL_P,sFrontR_P, sBackL_P, sBackR_P, backL_P,BackR_P;
+    var panObj = [ frontL_P, frontR_P, sFrontL_P,sFrontR_P, sBackL_P, sBackR_P, backL_P,BackR_P];
+    //Meters--- to get raw amp val
+    var frontL_M, frontR_M, sFrontL_M,sFrontR_M, sBackL_M, sBackR_M, backL_M,BackR_M;
+    var metObj = [frontL_M, frontR_M, sFrontL_M,sFrontR_M, sBackL_M, sBackR_M, backL_M,BackR_M];
+    // Player and sources
+    var frontL_S, frontR_S, sFrontL_S,sFrontR_S, sBackL_S, sBackR_S, backL_S,BackR_S;
+    var srcObj = [frontL_S, frontR_S, sFrontL_S,sFrontR_S, sBackL_S, sBackR_S, backL_S,BackR_S];
+    var frontL_B, frontR_B, sFrontL_B,sFrontR_B, sBackL_B, sBackR_B, backL_B,BackR_B;
+    var srcBuf = [frontL_B, frontR_B, sFrontL_B,sFrontR_B, sBackL_B, sBackR_B, backL_B,BackR_B];
+	//var srcLoc = [ "resources/1.ogg","resources/2.ogg","resources/3.ogg","resources/4.ogg", "resources/5.ogg", "resources/6.ogg", "resources/7.ogg", "resources/8.ogg"];
+	var srcLoc = [ "resources/shortFilesForTesting/1.wav","resources/shortFilesForTesting/2.wav","resources/shortFilesForTesting/3.wav","resources/shortFilesForTesting/4.wav", "resources/shortFilesForTesting/5.wav", "resources/shortFilesForTesting/6.wav", "resources/shortFilesForTesting/7.wav", "resources/shortFilesForTesting/8.wav"];
+
+	var fL = speakPos[0];
+    var fR =speakPos[1];
+    var fSL= speakPos[2];
+    var fSR= speakPos[3];
+    var bSL= speakPos[4];
+    var bSR= speakPos[5];
+    var bL= speakPos[6];
+	var bR=speakPos[7];
+	
+    //*************************************** 
+    createPans(); // create 8 panners
+    //*************************************** 
+
+
+        //bind the interface
+        
+		document.querySelector("tone-play-toggle").bind(Tone.Transport);
+				
+		// THREE.JS //
+		
+		if (Detector.webgl){
+
+			var SCREEN_WIDTH = document.querySelector("#three").clientWidth;
+			var SCREEN_HEIGHT = document.querySelector("#three").clientHeight;
+			var aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+
+			// console.log(SCREEN_WIDTH, SCREEN_HEIGHT, aspect);
+
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(50, aspect, 10, 10000);
+			camera.position.z = 0.0;
+			camera.position.x = 0.0;
+			camera.position.y = 50.0;
+			camera.updateMatrixWorld();
+
+			//scene.add( new THREE.AmbientLight( 0xff0040, 10 ) );
+
+			// var light = new THREE.PointLight( 0xffffff );
+			// 	light.position.copy( camera.position );
+			// 	scene.add( light );
+				
+            
+        //***************************************   
+        //createReps(); //add 8 objects
+        //***************************************  
+			
+
+			var renderer = new THREE.WebGLRenderer({ antialias : true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			onWindowResize();
+			renderer.domElement.style.position = "relative";
+			document.querySelector("#three").appendChild(renderer.domElement);
+
+			controls = new THREE.OrbitControls(camera, renderer.domElement);
+			controls.addEventListener("change", function(){
+                Tone.Listener.updatePosition(camera);
+                //updatePanners();
+			});
+			//set the camer initially
+            Tone.Listener.setPosition(0,0,0);
+            Tone.Listener.setOrientation.z = -1;
+			
+
+			// var simpleCircle = new THREE.Shape();
+			// 	simpleCircle.moveTo( 0, 0 ,0);
+			// 	simpleCircle.absarc( 40, 40, 40, 0, Math.PI * 2, false );
+				
+			// 	//get points from sahpe
+			// 	var points = simpleCircle.getPoints();
+			// 	var spacedPoints = simpleCircle.getSpacedPoints( 15 );
+			// 		var geometryPoints = new THREE.BufferGeometry().setFromPoints( points );
+			// 		var geometrySpacedPoints = new THREE.BufferGeometry().setFromPoints( spacedPoints );
+
+			// 		console.log(spacedPoints);
+
+			// 		var particles = new THREE.Points( geometryPoints, new THREE.PointsMaterial( { color: 0xff00ff, size: 4 } ) );
+			// 		particles.position.set( fL[0],fL[1], fL[2] );
+			// 		//particles.rotation.set( rx, ry, rz );
+			// 		//particles.scale.set( .1, .1, .1 );
+			// 		scene.add( particles );
+			// 		// equidistance sampled points
+			// 		var particles = new THREE.Points( geometrySpacedPoints, new THREE.PointsMaterial( { color: 0xff00ff, size: 4 } ) );
+			// 		particles.position.set( fR[0],fR[1], fR[2]  );
+			// 		// //particles.rotation.set( rx, ry, rz );
+			// 		// //particles.scale.set( s, s, s );
+			// 		scene.add( particles );
+
+			
+			
+
+			function onWindowResize(event){
+				SCREEN_WIDTH = document.querySelector("#three").clientWidth;
+				SCREEN_HEIGHT = document.querySelector("#three").clientHeight;
+				aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+				camera.aspect = aspect;
+				renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+				camera.updateProjectionMatrix();
+			}
+
+			window.addEventListener("resize", onWindowResize);
+
+			
+
+			function animate(){
+				requestAnimationFrame(animate);
+				var r = Date.now() * 0.0005;
+               
+                
+				renderer.render(scene, camera);
+                controls.update();
+
+                updatePanners(counter);
+				
+			}
+
+			animate();
+		}
+
+		
+	</script>
+
+	</style>
+</body>
+</html>
